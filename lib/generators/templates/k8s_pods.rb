@@ -22,6 +22,22 @@ K8sPods.setup do |config|
     config.config_map_name = "k8s-pods-config-#{Rails.env}"
     config.secret_map_name = "k8s-pods-secret-#{Rails.env}"
 
+    config.ecr_url = ENV['ECR_URL']
+    config.ecr_tag = ENV['ECR_TAG']
+
+    config.k8s_app_name = "app_name"
+    # Kubernetes pod labels
+    # Set many as you want, all will be set in the pod as labels
+    # The ecr_tag will be inserted always
+    config.labels = {
+        app_name: "app_name"
+    }
+
+    
+
+    config.logging = ENV["LOG_CRON_WORKER"]
+    config.log_folder = Rails.env.production? ? ENV["EFS_PATH"] : "log"
+  
     # List of models which instance methods will be invoked in the pod
     config.instance_models = []
 

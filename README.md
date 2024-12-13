@@ -45,6 +45,19 @@ K8sPods::Record.class_eval do
 end
 ```
 
+The instances of the models which will be "owners" of a K8sPods::Cron should respond to the k8s_pod_owner_name
+```ruby
+class MyModel < ActiveRecord::Base
+    def k8s_pod_owner_name
+        self.name
+    end
+end
+
+```
+
+
+
+
 We should create some K8sDelayedPod definitions, as for example:
 
 ```ruby

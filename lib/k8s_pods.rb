@@ -30,9 +30,27 @@ module K8sPods
   mattr_accessor :secret_map_name
   @@secret_map_name = ""
 
+  mattr_accessor :ecr_url
+  @@ecr_url = ""
+
+  mattr_accessor :ecr_tag
+  @@ecr_tag = ""
+
+  mattr_accessor :k8s_app_name
+  @@k8s_app_name = ""
+
+  mattr_accessor :logging
+  @@log_folder = ""
+
+  mattr_accessor :log_folder
+  @@log_folder = ""
+
   mattr_accessor :instance_models
   @@instance_models = []
   
+  mattr_accessor :labels
+  @@labels = {}
+
   def self.setup
     yield self
   end

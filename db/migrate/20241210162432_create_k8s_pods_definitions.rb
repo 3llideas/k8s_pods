@@ -16,6 +16,7 @@ class CreateK8sPodsDefinitions < ActiveRecord::Migration[6.1]
 
       t.references :owner, polymorphic: true
       t.references :definition
+      t.references :last_record_exec
 
       t.string :minute, default: "*"
       t.string :hour, default: "*"
@@ -31,11 +32,28 @@ class CreateK8sPodsDefinitions < ActiveRecord::Migration[6.1]
 
       t.string :rake_task, default: ""
       t.string :record_task, default: ""
+
       t.string :rake_task_arg1, default: ""
       t.string :rake_task_arg2, default: ""
       t.string :rake_task_arg3, default: ""
       t.string :rake_task_arg4, default: ""
       t.string :rake_task_arg5, default: ""
+
+      t.string :arg1_value, default: ""
+      t.string :arg2_value, default: ""
+      t.string :arg3_value, default: ""
+      t.string :arg4_value, default: ""
+      t.string :arg5_value, default: ""
+
+      t.string :arg1_type, default: ""
+      t.string :arg2_type, default: ""
+      t.string :arg3_type, default: ""
+      t.string :arg4_type, default: ""
+      t.string :arg5_type, default: ""      
+
+      t.string :frequency, default: ""
+      t.boolean :autogenerate, default: false
+      t.datetime :last_exec, default: -> { "CURRENT_TIMESTAMP" }, null: false
 
       t.timestamps
     end

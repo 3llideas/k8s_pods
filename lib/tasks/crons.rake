@@ -2,8 +2,10 @@ namespace :crons do
     desc "Background task that executes 'check_and_run' every 15 minutes"
     task worker: :environment do
       loop do
-        if ENV["LOG_CRON_WORKER"] == "1"
-          file_path = File.join(ENV["EFS_PATH"], ENV["APP_STOAM_SAAS_K8S_APP_NAME"], "worker_cron.log")
+        if K8sPods.logging == "1"
+          dir = "#{K8sPods.log_folder}/#{K8sPods.k8s_app_name}"
+          Dir.mkdir(dir) unless File.exist?(dir)          
+          file_path = File.join(K8sPods.log_folder, K8sPods.k8s_app_name, "worker_cron.log")
           begin
             log_file = File.open(file_path, "a")
             log_file.write("inicia cron worker #{Time.now}\n")
@@ -24,17 +26,17 @@ namespace :crons do
   
     desc "Check if there are cron definitions to be triggered"
     task check_and_run: :environment do
-        StoamCarga::Cron.check_and_run
+        K8sPods::Cron.check_and_run
     end
   
     desc "Generates the default cron tasks"
     task generate_default_crons: :environment do
-        StoamCarga::Cron.create(name: "Sitemap refresh",
+        K8sPods::Cron.create(name: "Sitemap refresh",
         minute: "30",
         hour: "4",
         rake_task: "sitemap:refresh:no_ping",
         active: true,
-        k8s_delayed_pod: K8sDelayedPod.find_by(queue_name: "k8s-pod"))
+        k8s_delayed_pod: K8sPods::Definition.find_by(queue_name: "k8s-pod"))
     end
   
     desc "Raises error"

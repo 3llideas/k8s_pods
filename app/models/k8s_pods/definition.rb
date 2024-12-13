@@ -1,6 +1,8 @@
 module K8sPods
   class Definition < ApplicationRecord
     has_many :crons, class_name: 'K8sPods::Cron', foreign_key: 'cron_id'
+    validates :queue_name, presence: true, uniqueness: true
+    scope :active, -> { where(active: true) }
 
      # The name should be equal as the returned by the method config_map_name
     CONFIG_MAP = "
@@ -22,14 +24,6 @@ module K8sPods
       type: Opaque
       data:"
       
-    # def self.config_map_name
-    #   "k8s-stoamsaas-#{ENV["APP_NAME"]}-#{ENV["APP_ECR_TAG"]}-envapp"
-    # end
-
-    # def self.secrets_name
-    #   "k8s-stoamsaas-#{ENV["APP_NAME"]}-#{ENV["APP_ECR_TAG"]}-env-var-secret"
-    # end
-
     def self.clean_succeeded
       client = K8sPods::Definition.get_client
       all_entities = client.all_entities(namespace: K8sPods.namespace)
@@ -46,8 +40,8 @@ module K8sPods
         client = K8sPods::Definition.get_client
         yaml = YAML.safe_load(pod_yaml)
         cron = job.payload_object.object.cron
-        job_name = "#{cron.history_task}#{cron.s3_data_transfer_task}#{cron.rake_task}"
-        name = "#{ENV["APP_NAME"]}-#{ENV["APP_ECR_TAG"]}-#{queue_name}-#{job.id}-#{job_name}".gsub(/[^0-9A-Za-z-]/, "-").gsub("--", "-").truncate(62, omission: "") + "0"
+        job_name = "#{cron.name}"
+        name = "#{K8sPods.k8s_app_name}-#{K8sPods.ecr_tag}-#{queue_name}-#{job.id}-#{job_name}".gsub(/[^0-9A-Za-z-]/, "-").downcase.gsub("--", "-").truncate(62, omission: "") + "0"
         yaml["metadata"]["name"] = name
         yaml["spec"]["containers"][0]["name"] = name
         yaml["spec"]["containers"][0]["args"][0] = yaml["spec"]["containers"][0]["args"][0].gsub("%job_id%", job.id.to_s)
@@ -55,7 +49,7 @@ module K8sPods
 
         yaml["spec"]["containers"][0]["env"].each_with_index do |variable, index|
           next unless yaml["spec"]["containers"][0]["env"][index]["valueFrom"].present? && yaml["spec"]["containers"][0]["env"][index]["valueFrom"]["secretKeyRef"]
-          yaml["spec"]["containers"][0]["env"][index]["valueFrom"]["secretKeyRef"]["name"] = K8sPods.secrets_name
+          yaml["spec"]["containers"][0]["env"][index]["valueFrom"]["secretKeyRef"]["name"] = K8sPods.secret_map_name
         end
 
         yaml["metadata"]["namespace"] = if job.pod_namespace.to_s.empty?
@@ -63,12 +57,14 @@ module K8sPods
         else
           job.pod_namespace
         end
+
         yaml["metadata"]["labels"] = {} if yaml["metadata"]["labels"].nil?
-        yaml["metadata"]["labels"]["app_name"] = ENV["APP_NAME"]
-        yaml["metadata"]["labels"]["ecr_tag"] = ENV["APP_ECR_TAG"]
+        K8sPods.labels.each do |key, value|
+          yaml["metadata"]["labels"][key] = value
+        end
 
         yaml["spec"]["containers"][0]["image"] = if job.pod_image.to_s.empty?
-          pod_image.to_s.empty? ? "#{ENV["APP_ECR_URL"]}:#{ENV["APP_ECR_TAG"]}" : pod_image
+          pod_image.to_s.empty? ? "#{K8sPods.ecr_url}:#{K8sPods.ecr_tag}" : pod_image
         else
           job.pod_image
         end
@@ -84,14 +80,14 @@ module K8sPods
         else
           job.pod_memory
         end
-        byebug
-        # service = Kubeclient::Resource.new(yaml)
 
-        # client.create_pod(service)
+        service = Kubeclient::Resource.new(yaml)
+
+        client.create_pod(service)
       rescue => e
         return e.message
       end
-      I18n.t(".execute-now-ok")
+      I18n.t("k8s_pods.flash.execute-now-ok")
     end
 
     def self.get_client
@@ -129,7 +125,7 @@ module K8sPods
 
       yaml_secrets = YAML.safe_load(K8sPods::Definition::SECRET).deep_symbolize_keys
       yaml_secrets[:data] = {}
-      K8sPods.environment_variables.each{|env| yaml_secrets[:data][env] = ENV[env]}
+      K8sPods.environment_variables.each{|env| yaml_secrets[:data][env] = Base64.strict_encode64(ENV[env].to_s)}
 
       begin
         secret = client.get_secret(yaml_secrets[:metadata][:name], yaml_secrets[:metadata][:namespace])
@@ -155,7 +151,7 @@ module K8sPods
       k8spod.pod_image = ""
       k8spod.pod_cpu = "100m"
       k8spod.pod_memory = "128Mi"
-      k8spod.pod_yaml = <<~EOS
+      yaml = <<~EOS
         apiVersion: v1
         kind: Pod
         metadata:
@@ -190,111 +186,6 @@ module K8sPods
               env:
                 - name: CURRENTLY_IN_A_POD
                   value: 'true'
-                - name: APP_AWS_K_ACCESS_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: APP_AWS_K_ACCESS_KEY
-                - name: APP_AWS_K_SECRET_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: APP_AWS_K_SECRET_KEY
-                - name: APP_EMAIL_PASSWORD
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: APP_EMAIL_PASSWORD
-                - name: APP_EMAIL_USERNAME
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: APP_EMAIL_USERNAME
-                - name: APP_GOOGLE_API_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: APP_GOOGLE_API_KEY
-                - name: APP_RECAPTCHA_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: APP_RECAPTCHA_KEY
-                - name: APP_RECAPTCHA_SECRET
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: APP_RECAPTCHA_SECRET
-                - name: APP_SECRET_KEY_BASE
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: APP_SECRET_KEY_BASE
-                - name: DATABASE_URL
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: DATABASE_URL
-                - name: ESB_PROJECT_NAME
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: ESB_PROJECT_NAME
-                - name: ESB_STREAM2_NAME
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: ESB_STREAM2_NAME
-                - name: ESB_BUCKET_SHARED
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: ESB_BUCKET_SHARED
-                - name: ESB_BUCKET_PREFIX
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: ESB_BUCKET_PREFIX
-                - name: ESB_COMMON_FILE_NAME
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: ESB_COMMON_FILE_NAME
-                - name: APP_AWS_REGION
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: APP_AWS_REGION
-                - name: STOAM_MASTER_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: STOAM_MASTER_KEY
-                - name: LOCKBOX_MASTER_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: k8s-stoamsaas-app-env-var-secret
-                      key: LOCKBOX_MASTER_KEY
-                - name: STOAM_BC_EXTENSION_NAME
-                valueFrom:
-                  secretKeyRef:
-                    name: k8s-stoamsaas-app-env-var-secret
-                    key: STOAM_BC_EXTENSION_NAME
-                - name: STRIPE_PUBLISHABLE_KEY
-                valueFrom:
-                  secretKeyRef:
-                    name: k8s-stoamsaas-app-env-var-secret
-                    key: STRIPE_PUBLISHABLE_KEY
-                - name: STRIPE_SECRET_KEY
-                valueFrom:
-                  secretKeyRef:
-                    name: k8s-stoamsaas-app-env-var-secret
-                    key: STRIPE_SECRET_KEY
-                - name: BASECAMP_URL
-                valueFrom:
-                  secretKeyRef:
-                    name: k8s-stoamsaas-app-env-var-secret
-                    key: BASECAMP_URL
           restartPolicy: Never
           volumes:
             - name: sharedstoamsaas
@@ -305,8 +196,24 @@ module K8sPods
               mountPath: /var/run/secrets/kubernetes.io/serviceaccount"
       EOS
 
-      k8spod.save
 
+      yaml_pod = YAML.safe_load(yaml)
+
+      K8sPods.environment_variables.each do |env| 
+       hash_env = {
+        "name": env,
+        "valueFrom":{
+          "secretKeyRef":{
+            "name": K8sPods.secret_map_name,
+            "key": env
+            }
+          }
+        }.deep_stringify_keys
+        yaml_pod["spec"]["containers"][0]["env"] << hash_env
+      end
+
+      k8spod.pod_yaml = yaml_pod.to_yaml
+      k8spod.save
       k8spod
     end
   end

@@ -1,0 +1,19 @@
+en:
+  k8s_pods:
+    error:
+      args: You must indicate the type and value for each argument
+      error_executing: Error executing task. Contact technical service.
+      rake_task_args: Review the parameters (PARAMETER=VALUE format)
+      review_time: Review the definition of the execution time (minutes, hours, days, months, days of the week)
+      double_task: Only one task per cron
+      k8s_not_found: K8S POD definition not found. Contact technical service.
+      missing_task: You must indicate a task to execute
+      review_time: Review the definition of times      
+    flash:
+      create-ok: Pod definition created
+      executing: Running task.
+      update-ok: Updated pod definition
+      create-ok: Cron generated without errors
+      execute-now-not-ok: Error executing task
+      execute-now-ok: Running task
+      update-ok: Updated Cron without errors      
