@@ -1,4 +1,4 @@
-namespace :k8s do
+namespace :k8s_pods do
     desc "Generate PODs and execute delayed jobs"
     task delayed_to_pod: :environment do
       # K8sDelayedPod.clean_succeeded

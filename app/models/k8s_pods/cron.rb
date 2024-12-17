@@ -6,7 +6,7 @@ module K8sPods
         belongs_to :definition, class_name: 'K8sPods::Definition', foreign_key: 'definition_id'
         has_many :records, class_name: 'K8sPods::Record', foreign_key: 'cron_id'
         belongs_to :last_record_exec, optional: true, class_name: "K8sPods::Record", inverse_of: :cron_exec
-        belongs_to :owner, polymorphic: true
+        belongs_to :owner, polymorphic: true, optional: true
 
         validate :correct_time_definition
         validate :only_rake_or_instance_method
@@ -22,7 +22,7 @@ module K8sPods
 
         scope :active, -> { where(active: true).order("day,hour,minute") }
       
-        FRECUENCIES = ["dia", "hora", "cuarto_hora", "dia_5"]
+        FREQUENCIES = ["dia", "hora", "cuarto_hora", "dia_5"]
         VALID_ARGUMENT_TYPES = ["String", "FalseClass", "TrueClass", "Integer", "Decimal", "Array", "Hash"]
 
         def call_rake(record)
@@ -69,69 +69,69 @@ module K8sPods
         end
                 
         def run_task(record = nil, execute_now = false, auto_executed = false)
-            record = (record.class == K8sPods::Record) ? record : records.new
-            record.status = "en-cola"
-            task = record_task.present? ? record_task : rake_task
-            record.cron = self
-            record.owner = owner if owner.present?
-            record.log ||= ""
+          record = (record.class == K8sPods::Record) ? record : records.new
+          record.status = "en-cola"
+          task = record_task.present? ? record_task : rake_task
+          record.cron = self
+          record.owner = owner if owner.present?
+          record.log ||= ""
 
-            if last_record_exec.present? &&
-                ["en-cola", "iniciada"].include?(last_record_exec.estado.try(:parameterize))
-        
-                record.status = "erronea"
-                record.log += "\n La tarea sigue ejecutándose \n"
-                record.save
-                if Time.now > (last_record_exec.created_at + 0.5 * fugit_cron.rough_frequency)
-                    record.log += "\n Tarea autodesbloqueada \n"
-                    record.status = "en-cola"
-                    record.save
-                    last_record_exec.estado = "erronea"
-                    last_record_exec.save
-                else
-                return
-                end
-            else
-                record.save
-                if auto_executed
-                    update_columns(last_record_exec_id: record.id, last_exec: Time.now)
-                end
-            end
-        
-            arguments = []
-            arguments << K8sPods::Cron.convert_to_data_type(arg1_type, arg1_value) unless arg1_type.empty?
-            arguments << K8sPods::Cron.convert_to_data_type(arg2_type, arg2_value) unless arg2_type.empty?
-            arguments << K8sPods::Cron.convert_to_data_type(arg3_type, arg3_value) unless arg3_type.empty?
-            arguments << K8sPods::Cron.convert_to_data_type(arg4_type, arg4_value) unless arg4_type.empty?
-            arguments << K8sPods::Cron.convert_to_data_type(arg5_type, arg5_value) unless arg5_type.empty?
-        
-            begin
-                if !rake_task.to_s.empty?
-                    if definition.present?
-                        delayed_job = delay(queue: definition.queue_name, pod_cpu: pod_cpu, pod_memory: pod_memory, pod_namespace: pod_namespace, pod_image: pod_image).call_rake(historial)
-                        if execute_now
-                            definition = K8sPods::Definition.find_by(queue_name: delayed_job.queue)
-                            definition.deploy_and_run(delayed_job)
-                        end
-                    else
-                        call_rake(historial)
-                    end
-                elsif !record_task.to_s.empty?
-                    if self.definition.present?
-                        delayed_job = record.delay(queue: self.definition.queue_name, pod_cpu: pod_cpu, pod_memory: pod_memory, pod_namespace: pod_namespace, pod_image: pod_image).__send__(record_task, *arguments)
-                        if execute_now
-                            definition = K8sPods::Definition.find_by(queue_name: delayed_job.queue)
-                            definition.deploy_and_run(delayed_job)
-                        end
-                    else
-                        record.__send__(record_task, *arguments)
-                    end
-                end
-            rescue Exception => e
-                record.update_column(:log, "#{record.log}\n#{e.message}")
-                return "#{I18n.t("k8s_pods.error.error_executing")} --> #{e.message}"
-            end
-            I18n.t("k8s_pods.flash.executing")
+          if last_record_exec.present? &&
+              ["en-cola", "iniciada"].include?(last_record_exec.estado.try(:parameterize))
+      
+              record.status = "erronea"
+              record.log += "\n La tarea sigue ejecutándose \n"
+              record.save
+              if Time.now > (last_record_exec.created_at + 0.5 * fugit_cron.rough_frequency)
+                  record.log += "\n Tarea autodesbloqueada \n"
+                  record.status = "en-cola"
+                  record.save
+                  last_record_exec.estado = "erronea"
+                  last_record_exec.save
+              else
+              return
+              end
+          else
+              record.save
+              if auto_executed
+                  update_columns(last_record_exec_id: record.id, last_exec: Time.now)
+              end
+          end
+      
+          arguments = []
+          arguments << K8sPods::Cron.convert_to_data_type(arg1_type, arg1_value) unless arg1_type.empty?
+          arguments << K8sPods::Cron.convert_to_data_type(arg2_type, arg2_value) unless arg2_type.empty?
+          arguments << K8sPods::Cron.convert_to_data_type(arg3_type, arg3_value) unless arg3_type.empty?
+          arguments << K8sPods::Cron.convert_to_data_type(arg4_type, arg4_value) unless arg4_type.empty?
+          arguments << K8sPods::Cron.convert_to_data_type(arg5_type, arg5_value) unless arg5_type.empty?
+      
+          begin
+              if !rake_task.to_s.empty?
+                  if definition.present? && !Rails.env.development?
+                      delayed_job = delay(queue: definition.queue_name, pod_cpu: pod_cpu, pod_memory: pod_memory, pod_namespace: pod_namespace, pod_image: pod_image).call_rake(historial)
+                      if execute_now
+                          definition = K8sPods::Definition.find_by(queue_name: delayed_job.queue)
+                          definition.deploy_and_run(delayed_job)
+                      end
+                  else
+                      call_rake(historial)
+                  end
+              elsif !record_task.to_s.empty?
+                  if self.definition.present? && !Rails.env.development?
+                      delayed_job = record.delay(queue: self.definition.queue_name, pod_cpu: pod_cpu, pod_memory: pod_memory, pod_namespace: pod_namespace, pod_image: pod_image).__send__(record_task, *arguments)
+                      if execute_now
+                          definition = K8sPods::Definition.find_by(queue_name: delayed_job.queue)
+                          definition.deploy_and_run(delayed_job)
+                      end
+                  else
+                      record.__send__(record_task, *arguments)
+                  end
+              end
+          rescue Exception => e
+              record.update_column(:log, "#{record.log}\n#{e.message}")
+              return "#{I18n.t("k8s_pods.error.error_executing")} --> #{e.message}"
+          end
+          I18n.t("k8s_pods.flash.executing")
         end
         
 

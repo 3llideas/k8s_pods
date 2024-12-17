@@ -17,3 +17,8 @@ es:
       execute-now-not-ok: Error al ejecutar la tarea
       execute-now-ok: Ejecutando tarea
       update-ok: Cron actualizado sin errores      
+    cron_frequencies:
+      dia: "Diaria"
+      hora: "Cada hora"
+      cuarto_hora: "Cada 15 minutos"
+      min_5: "Cada 5 minutos"

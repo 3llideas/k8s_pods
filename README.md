@@ -39,22 +39,17 @@ rake db:migrate
 By default, the application rakes are available. If we want to execute other functions, we need to decorate/override the record model to add our own functions:
 ```ruby
 K8sPods::Record.class_eval do
-    def self.test
+    def test
         puts 'test'
     end
 end
 ```
 
-The instances of the models which will be "owners" of a K8sPods::Cron should respond to the k8s_pod_owner_name
+We can always get the added methods using the K8sPods::Record.pod_methods method:
 ```ruby
-class MyModel < ActiveRecord::Base
-    def k8s_pod_owner_name
-        self.name
-    end
-end
-
+3.0.5 :001 > K8sPods::Record.pod_methods
+ => [:test]
 ```
-
 
 
 

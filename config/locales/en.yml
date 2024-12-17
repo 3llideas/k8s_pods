@@ -17,3 +17,8 @@ en:
       execute-now-not-ok: Error executing task
       execute-now-ok: Running task
       update-ok: Updated Cron without errors      
+    cron_frequencies:
+      dia: "Daily"
+      hora: "Every hour"
+      cuarto_hora: "Every 15 minutes"
+      min_5: "Every 5 minutes"      

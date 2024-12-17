@@ -1,4 +1,4 @@
-namespace :crons do
+namespace :k8s_pods do
     desc "Background task that executes 'check_and_run' every 15 minutes"
     task worker: :environment do
       loop do
@@ -15,8 +15,8 @@ namespace :crons do
             log_file.close unless log_file.nil?
           end
         end
-        system("bundle exec rake crons:check_and_run")
-        system("bundle exec rake k8s:delayed_to_pod")
+        system("bundle exec rake k8s_pods:check_and_run")
+        system("bundle exec rake k8s_pods:delayed_to_pod")
         3.times do
           system("QUEUE=mailers bundle exec rake jobs:workoff")
           sleep(1.minutes)
