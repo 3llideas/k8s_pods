@@ -4,8 +4,8 @@ require "open3"
 module K8sPods
     class Cron < ApplicationRecord
         belongs_to :definition, class_name: 'K8sPods::Definition', foreign_key: 'definition_id'
-        has_many :records, class_name: 'K8sPods::Record', foreign_key: 'cron_id'
-        belongs_to :last_record_exec, optional: true, class_name: "K8sPods::Record", inverse_of: :cron_exec
+        has_many :records, class_name: K8sPods.record_class, foreign_key: 'cron_id'
+        belongs_to :last_record_exec, optional: true, class_name: K8sPods.record_class, inverse_of: :cron_exec
         belongs_to :owner, polymorphic: true, optional: true
 
         validate :correct_time_definition
@@ -24,6 +24,14 @@ module K8sPods
       
         FREQUENCIES = ["dia", "hora", "cuarto_hora", "dia_5"]
         VALID_ARGUMENT_TYPES = ["String", "FalseClass", "TrueClass", "Integer", "Decimal", "Array", "Hash"]
+
+        def task
+          if self.record_task.to_s.empty?
+            self.rake_task
+          else
+            self.record_task
+          end
+        end
 
         def call_rake(record)
             time = Time.now
@@ -50,7 +58,7 @@ module K8sPods
                 Dir.mkdir(dir) unless File.exist?(dir)
             end
 
-            stdout, stderr, status = Open3.capture3("bundle exec rake #{task} #{options.join(" ")} >> #{dir}/#{Time.now.strftime("%Y%m%d%H%M")}.log")
+            stdout, stderr, status = Open3.capture3("bundle exec rake #{rake_task} #{options.join(" ")} >> #{dir}/#{Time.now.strftime("%Y%m%d%H%M")}.log")
         
             record.log = status.success? ? stdout.first(10000) : stderr.first(10000)
             record.time = Time.at(Time.now - time).utc.strftime("%H:%M:%S")
@@ -69,11 +77,10 @@ module K8sPods
         end
                 
         def run_task(record = nil, execute_now = false, auto_executed = false)
-          record = (record.class == K8sPods::Record) ? record : records.new
+          record = (record.class.to_s == K8sPods.record_class) ? record : records.new
           record.status = "en-cola"
           task = record_task.present? ? record_task : rake_task
           record.cron = self
-          record.owner = owner if owner.present?
           record.log ||= ""
 
           if last_record_exec.present? &&
@@ -108,13 +115,13 @@ module K8sPods
           begin
               if !rake_task.to_s.empty?
                   if definition.present? && !Rails.env.development?
-                      delayed_job = delay(queue: definition.queue_name, pod_cpu: pod_cpu, pod_memory: pod_memory, pod_namespace: pod_namespace, pod_image: pod_image).call_rake(historial)
+                      delayed_job = delay(queue: definition.queue_name, pod_cpu: pod_cpu, pod_memory: pod_memory, pod_namespace: pod_namespace, pod_image: pod_image).call_rake(record)
                       if execute_now
                           definition = K8sPods::Definition.find_by(queue_name: delayed_job.queue)
                           definition.deploy_and_run(delayed_job)
                       end
                   else
-                      call_rake(historial)
+                    call_rake(record)
                   end
               elsif !record_task.to_s.empty?
                   if self.definition.present? && !Rails.env.development?
@@ -124,7 +131,7 @@ module K8sPods
                           definition.deploy_and_run(delayed_job)
                       end
                   else
-                      record.__send__(record_task, *arguments)
+                    record.__send__(record_task, *arguments)
                   end
               end
           rescue Exception => e

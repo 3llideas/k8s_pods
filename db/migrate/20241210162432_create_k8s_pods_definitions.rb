@@ -60,7 +60,6 @@ class CreateK8sPodsDefinitions < ActiveRecord::Migration[6.1]
 
     create_table :k8s_pods_records do |t|
       t.references :cron
-      t.references :owner, polymorphic: true
       t.string :status
       t.text :log
       t.string :time

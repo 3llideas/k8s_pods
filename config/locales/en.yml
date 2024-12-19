@@ -21,4 +21,9 @@ en:
       dia: "Daily"
       hora: "Every hour"
       cuarto_hora: "Every 15 minutes"
-      min_5: "Every 5 minutes"      
+      min_5: "Every 5 minutes"
+    estados:
+      en-cola: Queued
+      erronea: Erroneous
+      iniciada: Started
+      finalizada: Finished

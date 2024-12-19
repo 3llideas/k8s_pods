@@ -2,7 +2,6 @@ module K8sPods
     class Record < ApplicationRecord
         belongs_to :cron, class_name: "K8sPods::Cron", foreign_key: 'cron_id'
         has_one :cron_exec, class_name: "K8sPods::Cron", inverse_of: :last_record_exec
-        belongs_to :owner, polymorphic: true, optional: true
 
         scope :cronified, -> { where.not(cron_id: nil) }
 
@@ -38,23 +37,6 @@ module K8sPods
             end
         end   
         
-        #   # task puesde ser un string con el tipo o ub objeto StoamCarga::Historial
-        # def self.exec_cron_or_delay(task, params = [])
-        #   if task.is_a? K8sPods::Record
-        #     record = task
-        #   else
-        #     tipo = (task[-1] == "!") ? task.chop : task
-        #     record = K8sPods::Record.create(status: "En cola", log: "")
-        #   end
-        #   record.save
-
-        #   if Rails.env.development? || ENV["CURRENTLY_IN_A_POD"] == "true" || Rails.env.test?
-        #     record.send(task_type, *params)
-        #   else
-        #     record.get_cron_and_execute(task, params)
-        #   end
-        # end
-
         def self.pod_methods
           K8sPods::Record.instance_methods - (K8sPods::Record.ancestors - [K8sPods::Record]).map(&:instance_methods).flatten - [:get_cron_and_execute,:autosave_associated_records_for_cron_exec,:autosave_associated_records_for_owner,:autosave_associated_records_for_cron]
         end

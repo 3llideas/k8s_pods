@@ -22,3 +22,8 @@ es:
       hora: "Cada hora"
       cuarto_hora: "Cada 15 minutos"
       min_5: "Cada 5 minutos"
+    estados:
+      en-cola: En cola
+      erronea: Errónea
+      iniciada: Iniciada
+      finalizada: Finalizada

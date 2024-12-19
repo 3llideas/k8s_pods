@@ -45,8 +45,8 @@ module K8sPods
   mattr_accessor :log_folder
   @@log_folder = ""
 
-  mattr_accessor :instance_models
-  @@instance_models = []
+  mattr_accessor :record_class
+  @@record_class = "K8sPods::Record"
   
   mattr_accessor :labels
   @@labels = {}

@@ -36,6 +36,14 @@ rails k8s_pods:install:migrations
 rake db:migrate
 ```
 
+We can reuse our own record / history / process models, setting the record_class
+```ruby
+K8sPods.setup do |config|
+    config.record_class = "OurModel"
+end
+```
+
+
 By default, the application rakes are available. If we want to execute other functions, we need to decorate/override the record model to add our own functions:
 ```ruby
 K8sPods::Record.class_eval do

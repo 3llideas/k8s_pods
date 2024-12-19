@@ -38,7 +38,7 @@ K8sPods.setup do |config|
     config.logging = ENV["LOG_CRON_WORKER"]
     config.log_folder = Rails.env.production? ? ENV["EFS_PATH"] : "log"
   
-    # List of models which instance methods will be invoked in the pod
-    config.instance_models = []
+    # List of models which instance methods will be invoked in the pod. By default is K8sPods::Record
+    config.record_class = "K8sPods::Record"
 
 end
