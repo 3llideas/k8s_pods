@@ -6,16 +6,16 @@ Gem::Specification.new do |spec|
   spec.authors     = [ "3LLIDEAS" ]
   spec.email       = [ "alaliena@3llideas.com" ]
   spec.homepage    = "https://3llideas.com"
-  spec.summary     = "k8s delayed pods 3llideas"
+  spec.summary     = "K8S delayed pods"
   spec.description = "Allow to manage pods definition, create pods and run delayed jobs on them "
-  spec.license     = "Propietary"
+  spec.license     = "MIT 2024 - 3LLIDEAS"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the "allowed_push_host"
   # to allow pushing to a single host or delete this section to allow pushing to any host.
   spec.metadata["allowed_push_host"] = "TODO: Set to 'http://mygemserver.com'"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  # spec.metadata["source_code_uri"] = "TODO: Put your gem's public repo URL here."
+  spec.metadata["source_code_uri"] = "https://github.com/3llideas/k8s_pods"
   # spec.metadata["changelog_uri"] = "TODO: Put your gem's CHANGELOG.md URL here."
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
