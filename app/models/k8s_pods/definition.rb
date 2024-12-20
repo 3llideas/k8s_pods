@@ -85,6 +85,12 @@ module K8sPods
 
         client.create_pod(service)
       rescue => e
+        yaml = YAML.load(job.handler)
+        if yaml.present? && yaml.class == Delayed::PerformableMethod && yaml.object.class.to_s == K8sPods.record_class
+          record = yaml.object
+          record.update_column(:status, "error")
+          record.update_column(:log, e.message)
+        end
         return e.message
       end
       I18n.t("k8s_pods.flash.execute-now-ok")
@@ -168,29 +174,23 @@ module K8sPods
               image: '%pod_image%'
               imagePullPolicy: Always
               command: ['/bin/bash', '-l', '-c']
-              args: ['RAILS_ENV=production bundle exec rake k8s:execute_delayed[%job_id%]']
+              args: ['RAILS_ENV=production bundle exec rake k8s_pods:execute_delayed[%job_id%]']
               resources:
                   requests:
                     cpu: '100m'
                     memory: '128Mi'
               volumeMounts:
-                - name: sharedstoamsaas
-                  mountPath: /efs-stoam
-                  readOnly: false
                 - name: kube-api-access-vwd29
                   readOnly: true
                   mountPath: /var/run/secrets/kubernetes.io/serviceaccount
               envFrom:
                 - configMapRef:
-                    name: k8s-stoamsaas-app-envapp
+                    name: #{K8sPods.config_map_name}
               env:
                 - name: CURRENTLY_IN_A_POD
                   value: 'true'
           restartPolicy: Never
           volumes:
-            - name: sharedstoamsaas
-              persistentVolumeClaim:
-                claimName: pvcsharedstoamsaas
             - name: kube-api-access-vwd29
               readOnly: true
               mountPath: /var/run/secrets/kubernetes.io/serviceaccount"
