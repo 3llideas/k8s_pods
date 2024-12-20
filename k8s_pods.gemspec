@@ -27,7 +27,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "kubeclient", ">= 4.9.3"
   spec.add_dependency "aws-sdk-core"
   spec.add_dependency "fugit"
-
+  spec.add_dependency "actionpack", ">= 8.0.0.1"
+  
   spec.add_dependency "mutex_m"
   spec.add_dependency "bigdecimal"
 
