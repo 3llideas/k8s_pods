@@ -88,9 +88,9 @@ module K8sPods
         yaml = YAML.load(job.handler)
         if yaml.present? && yaml.class == Delayed::PerformableMethod && yaml.object.class.to_s == K8sPods.record_class
           record = yaml.object
-          record.update_column(:status, "erronea")
-          record.update_column(:log, e.message)
         end
+        record.update_column(:status, "erronea")
+        record.update_column(:log, e.message)        
         return e.message
       end
       I18n.t("k8s_pods.flash.execute-now-ok")
