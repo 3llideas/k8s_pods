@@ -39,7 +39,7 @@ module K8sPods
         K8sPods::Definition.create_and_update_config_map?(true)
         client = K8sPods::Definition.get_client
         yaml = YAML.safe_load(pod_yaml)
-        cron = job.payload_object.object.class == K8sPods::Cron ? job.payload_object.object : job.payload_object.object.cron
+        cron = job.payload_object.object.class.to_s == "K8sPods::Cron" ? job.payload_object.object : job.payload_object.object.cron
         job_name = "#{cron.name}"
         name = "#{K8sPods.k8s_app_name}-#{K8sPods.ecr_tag}-#{queue_name}-#{job.id}-#{job_name}".gsub(/[^0-9A-Za-z-]/, "-").downcase.gsub("--", "-").truncate(62, omission: "") + "0"
         yaml["metadata"]["name"] = name
