@@ -35,7 +35,7 @@ module K8sPods
     end
 
     def deploy_and_run(job)
-      begin
+      # begin
         K8sPods::Definition.create_and_update_config_map?(true)
         client = K8sPods::Definition.get_client
         yaml = YAML.safe_load(pod_yaml)
@@ -84,15 +84,15 @@ module K8sPods
         service = Kubeclient::Resource.new(yaml)
 
         client.create_pod(service)
-      rescue => e
-        yaml = YAML.load(job.handler)
-        if yaml.present? && yaml.class == Delayed::PerformableMethod && yaml.object.class.to_s == K8sPods.record_class
-          record = yaml.object
-        end
-        record.update_column(:status, "erronea")
-        record.update_column(:log, e.message)        
-        return e.message
-      end
+      # rescue => e
+      #   yaml = YAML.load(job.handler)
+      #   if yaml.present? && yaml.class == Delayed::PerformableMethod && yaml.object.class.to_s == K8sPods.record_class
+      #     record = yaml.object
+      #     record.update_column(:status, "erronea")
+      #     record.update_column(:log, e.message) 
+      #   end   
+      #   return e.message
+      # end
       I18n.t("k8s_pods.flash.execute-now-ok")
     end
 
