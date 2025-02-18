@@ -48,6 +48,10 @@ module K8sPods
   mattr_accessor :record_class
   @@record_class = "K8sPods::Record"
   
+
+  mattr_accessor :record_owner
+  @@record_owner = "owner"
+
   mattr_accessor :labels
   @@labels = {}
 

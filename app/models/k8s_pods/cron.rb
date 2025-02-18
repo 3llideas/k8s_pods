@@ -79,6 +79,7 @@ module K8sPods
         def run_task(record = nil, execute_now = false, auto_executed = false)
           record = (record.class.to_s == K8sPods.record_class) ? record : records.new
           record.status = "en-cola"
+          record.send("#{K8sPods.record_owner}=",self.owner) if self.owner.present?
           task = record_task.present? ? record_task : rake_task
           record.cron = self
           record.log ||= ""

@@ -41,4 +41,5 @@ K8sPods.setup do |config|
     # List of models which instance methods will be invoked in the pod. By default is K8sPods::Record
     config.record_class = "K8sPods::Record"
 
+    config.record_owner = "owner"
 end
