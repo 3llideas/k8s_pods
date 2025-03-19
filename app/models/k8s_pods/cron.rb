@@ -85,7 +85,7 @@ module K8sPods
           record.log ||= ""
 
           if last_record_exec.present? &&
-              ["en-cola", "iniciada"].include?(last_record_exec.estado.try(:parameterize))
+              ["en-cola", "iniciada"].include?(last_record_exec.status.try(:parameterize))
       
               record.status = "erronea"
               record.log += "\n La tarea sigue ejecutándose \n"
@@ -94,7 +94,7 @@ module K8sPods
                   record.log += "\n Tarea autodesbloqueada \n"
                   record.status = "en-cola"
                   record.save
-                  last_record_exec.estado = "erronea"
+                  last_record_exec.status = "erronea"
                   last_record_exec.save
               else
               return
