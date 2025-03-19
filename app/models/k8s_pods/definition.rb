@@ -41,7 +41,7 @@ module K8sPods
         yaml = YAML.safe_load(pod_yaml)
         cron = job.payload_object.object.class.to_s == "K8sPods::Cron" ? job.payload_object.object : job.payload_object.object.cron
         job_name = "#{cron.name}"
-        name = "#{K8sPods.k8s_app_name}-#{K8sPods.ecr_tag}-#{queue_name}-#{job.id}-#{job_name}".gsub(/[^0-9A-Za-z-]/, "-").downcase.gsub("--", "-").truncate(62, omission: "") + "0"
+        name = "#{K8sPods.k8s_app_name}-#{job.id}-#{job_name}".gsub(/[^0-9A-Za-z-]/, "-").downcase.gsub("--", "-").truncate(62, omission: "") + "0"
         yaml["metadata"]["name"] = name
         yaml["spec"]["containers"][0]["name"] = name
         yaml["spec"]["containers"][0]["args"][0] = yaml["spec"]["containers"][0]["args"][0].gsub("%job_id%", job.id.to_s)
